@@ -1,0 +1,107 @@
+# ============================================================================
+#  Asistente IA de Pedidos — .env.example
+#  Copiar como backend/.env (y las NEXT_PUBLIC_* a frontend/.env.local)
+#  NUNCA commitear el .env real. Este archivo sí se commitea.
+# ============================================================================
+
+# ─────────────────── APP ───────────────────
+NODE_ENV=development
+PORT=3000
+API_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:3001
+CORS_ORIGINS=http://localhost:3001
+
+# ─────────────────── BASE DE DATOS ───────────────────
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/asistente_pedidos"
+# Requerida por Prisma Migrate en desarrollo
+SHADOW_DATABASE_URL="postgresql://postgres:postgres@localhost:5432/asistente_pedidos_shadow"
+
+# ─────────────────── REDIS (cache + colas BullMQ) ───────────────────
+REDIS_URL="redis://localhost:6379"
+BULLMQ_PREFIX="asistente"
+
+# ─────────────────── AUTENTICACIÓN INTERNA (admin / asesor) ───────────────────
+JWT_ACCESS_SECRET="genera-uno-con-openssl-rand-base64-48"
+JWT_REFRESH_SECRET="genera-otro-distinto-con-openssl-rand-base64-48"
+JWT_ACCESS_EXPIRES_IN="15m"
+JWT_REFRESH_EXPIRES_IN="7d"
+TWO_FACTOR_APP_NAME="AsistenteIA-Pedidos"
+# Clave AES-256-GCM (32 bytes en base64) para cifrar twoFactorSecret en BD
+ENCRYPTION_KEY="genera-con-openssl-rand-base64-32"
+PASSWORD_RESET_EXPIRES_MINUTES=30
+
+# ─────────────────── SESIÓN DEL CLIENTE EN EL CHAT ───────────────────
+# Firma la cookie httpOnly que identifica la sesión de invitado del chat
+SESSION_COOKIE_SECRET="genera-con-openssl-rand-base64-48"
+SESSION_COOKIE_NAME="ap_session"
+SESSION_TTL_HOURS=24
+
+# ─────────────────── IA (Anthropic) ───────────────────
+ANTHROPIC_API_KEY="sk-ant-xxxxxxxxxxxxxxxx"
+# Modelo base: Haiku 4.5 (más económico, mismo formato de tool use).
+# Si en pruebas la orquestación de tools falla, basta cambiar esta variable
+# a claude-sonnet-5 — no requiere ningún cambio de código.
+ANTHROPIC_MODEL="claude-haiku-4-5"
+ANTHROPIC_MAX_TOKENS=2048
+# Activa prompt caching del system prompt + catálogo (reduce costo por turno)
+ANTHROPIC_PROMPT_CACHE=true
+# Número máximo de turnos de historial enviados al modelo por request
+AI_HISTORY_MAX_TURNS=20
+# Máximo de iteraciones tool_use -> tool_result en un mismo turno
+AI_MAX_TOOL_ITERATIONS=6
+# Corte de gasto: llamadas al modelo por negocio por día
+AI_MAX_DAILY_CALLS_PER_BUSINESS=500
+
+# ─────────────────── SMS / OTP ───────────────────
+SMS_PROVIDER="twilio"            # twilio | infobip | labsmobile
+SMS_API_KEY="xxxxxxxx"
+SMS_API_SECRET="xxxxxxxx"
+SMS_SENDER_ID="AsistenteIA"
+OTP_LENGTH=6
+OTP_EXPIRATION_MINUTES=5
+OTP_MAX_ATTEMPTS=5
+OTP_RESEND_COOLDOWN_SECONDS=60
+OTP_MAX_SENDS_PER_PHONE_PER_DAY=10
+# Segundo OTP al confirmar el pedido. false = solo se verifica al inicio de
+# la sesión (evita un SMS adicional por pedido). true = doble SMS.
+OTP_ON_ORDER_CONFIRM=false
+# En desarrollo imprime el código en consola y NO envía SMS real (ahorro)
+SMS_DRY_RUN=true
+
+# ─────────────────── REGLAS DE NEGOCIO ───────────────────
+# Zona horaria usada para calcular el corte del día. CRÍTICO: el servidor
+# corre en UTC; sin esta variable los pedidos se liberarían 5 horas antes.
+BUSINESS_TIMEZONE="America/Bogota"
+DEFAULT_CURRENCY="COP"
+# Plazo por defecto: fin del día en que se creó el pedido (23:59:59 local)
+PAYMENT_DEADLINE_MODE="END_OF_DAY"
+# Extensión máxima, en días, solo a solicitud explícita del cliente y una vez
+MAX_DEADLINE_EXTENSION_DAYS=1
+# Cada cuánto corre el job que libera órdenes vencidas (cron)
+RELEASE_JOB_CRON="*/15 * * * *"
+# Cierra conversaciones inactivas (una nueva escritura abre pedido nuevo)
+CONVERSATION_IDLE_CLOSE_HOURS=12
+
+# ─────────────────── RATE LIMITING ───────────────────
+THROTTLE_TTL=60
+THROTTLE_LIMIT=20
+CHAT_MESSAGES_PER_MINUTE=20
+LOGIN_ATTEMPTS_PER_15MIN=5
+
+# ─────────────────── OBSERVABILIDAD ───────────────────
+LOG_LEVEL="info"
+SENTRY_DSN=""
+SENTRY_ENVIRONMENT="development"
+OTEL_EXPORTER_OTLP_ENDPOINT=""
+OTEL_SERVICE_NAME="asistente-pedidos-api"
+
+# ─────────────────── SEEDS (solo dev/staging) ───────────────────
+SEED_BUSINESS_NAME="Mi Emprendimiento"
+SEED_ADVISOR_NAME="Nombre de la asesora"
+SEED_SUPERADMIN_EMAIL="superadmin@local.test"
+SEED_SUPERADMIN_PASSWORD="CambiaEstaClave123!"
+
+# ─────────────────── FRONTEND (frontend/.env.local) ───────────────────
+NEXT_PUBLIC_API_URL=http://localhost:3000
+NEXT_PUBLIC_BUSINESS_SLUG=demo
+NEXT_PUBLIC_SENTRY_DSN=""
